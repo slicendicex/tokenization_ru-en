@@ -2,21 +2,18 @@
 """
 Prepare RU/EN FLORES+ samples for tokenization experiments.
 
-This script creates:
-- data/samples/flores_ru.txt
-- data/samples/flores_en.txt
+Default output:
+- data/samples/flores_ru.md
+- data/samples/flores_en.md
 - data/samples/flores_ru_en.jsonl
+- data/samples/flores_metadata.json
 
 Prerequisites:
     pip install datasets huggingface_hub
-    huggingface-cli login
+    hf auth login
 
 Or set:
     export HF_TOKEN="..."
-
-Notes:
-- FLORES+ requires accepting the dataset terms on Hugging Face.
-- Do not redistribute raw FLORES+ text publicly unless you comply with the dataset terms.
 """
 
 from __future__ import annotations
@@ -35,14 +32,6 @@ EN_CONFIG = "eng_Latn"
 RU_CONFIG = "rus_Cyrl"
 
 
-def sort_key(row: dict) -> tuple[int, str]:
-    raw_id = str(row.get("id", ""))
-    try:
-        return (int(raw_id), raw_id)
-    except ValueError:
-        return (10**9, raw_id)
-
-
 def load_lang(config: str, split: str, token: str | bool | None):
     return load_dataset(DATASET_NAME, config, split=split, token=token)
 
@@ -54,15 +43,14 @@ def build_by_id(rows: Iterable[dict]) -> Dict[str, dict]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--split", default="dev", choices=["dev", "devtest"])
-    parser.add_argument("--limit", type=int, default=100)
+    parser.add_argument("--limit", type=int, default=200)
     parser.add_argument("--out-dir", default="data/samples")
+    parser.add_argument("--format", default="md", choices=["md", "txt"])
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # If HF_TOKEN is set, use it. Otherwise token=True lets datasets/huggingface_hub
-    # use the locally stored login token from `huggingface-cli login`.
     token_env = os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_HUB_TOKEN")
     token: str | bool | None = token_env if token_env else True
 
@@ -94,14 +82,9 @@ def main() -> None:
             }
         )
 
-    (out_dir / "flores_en.txt").write_text(
-        "\n".join(pair["en"] for pair in pairs) + "\n",
-        encoding="utf-8",
-    )
-    (out_dir / "flores_ru.txt").write_text(
-        "\n".join(pair["ru"] for pair in pairs) + "\n",
-        encoding="utf-8",
-    )
+    ext = args.format
+    (out_dir / f"flores_en.{ext}").write_text("\n".join(pair["en"] for pair in pairs) + "\n", encoding="utf-8")
+    (out_dir / f"flores_ru.{ext}").write_text("\n".join(pair["ru"] for pair in pairs) + "\n", encoding="utf-8")
 
     with (out_dir / "flores_ru_en.jsonl").open("w", encoding="utf-8") as f:
         for pair in pairs:
@@ -112,23 +95,17 @@ def main() -> None:
         "version_note": "Record the exact dataset version from Hugging Face at article publication time.",
         "split": args.split,
         "limit": args.limit,
+        "format": ext,
         "en_config": EN_CONFIG,
         "ru_config": RU_CONFIG,
         "pair_count": len(pairs),
         "first_id": selected_ids[0] if selected_ids else None,
         "last_id": selected_ids[-1] if selected_ids else None,
+        "outputs": [f"flores_en.{ext}", f"flores_ru.{ext}", "flores_ru_en.jsonl"],
     }
-    (out_dir / "flores_metadata.json").write_text(
-        json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    (out_dir / "flores_metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     print(f"Saved {len(pairs)} aligned pairs to {out_dir}")
-    print("Created:")
-    print(f"- {out_dir / 'flores_en.txt'}")
-    print(f"- {out_dir / 'flores_ru.txt'}")
-    print(f"- {out_dir / 'flores_ru_en.jsonl'}")
-    print(f"- {out_dir / 'flores_metadata.json'}")
 
 
 if __name__ == "__main__":
