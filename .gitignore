@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Local secrets
+.env
+*.env
+
+# Generated FLORES+ raw samples
+data/samples/flores_en.txt
+data/samples/flores_ru.txt
+data/samples/flores_ru_en.jsonl
+data/samples/flores_metadata.json
+
+# Future generated results can be reviewed before commit
+results/
+
+# Generated layer planning documents
+LAYER*.md
+
+# Windows/WSL Zone.Identifier alternate data stream files
+*:Zone.Identifier
