@@ -116,6 +116,34 @@ What stands out:
 | `flores`                | OpenAI current API  | `gpt-5.5`            |     5,446 |             7,965 | 1.463x | Responses input token count    |
 | `flores`                | Gemini official     | `gemini-2.5-flash`   |     5,777 |             8,086 | 1.400x | official countTokens           |
 
+## Comparison With Local `o200k_base`
+
+For the tested Markdown samples and payload style `input=text`, the OpenAI
+Responses input-token counter returned the local `o200k_base` count plus a
+constant 6-token overhead.
+
+| Sample                  | `o200k_base` EN | OpenAI API EN | Delta EN | `o200k_base` RU / mixed | OpenAI API RU / mixed | Delta RU / mixed |
+| :---------------------- | --------------: | ------------: | -------: | ----------------------: | --------------------: | ---------------: |
+| `dev_prompt`            |           1,018 |         1,024 |       +6 |                   1,108 |                 1,114 |               +6 |
+| `project_rules`         |           1,094 |         1,100 |       +6 |                   1,247 |                 1,253 |               +6 |
+| `system_prompt`         |             870 |           876 |       +6 |                   1,004 |                 1,010 |               +6 |
+| `implementation_plan`   |           1,072 |         1,078 |       +6 |                   1,180 |                 1,186 |               +6 |
+| `flores`                |           5,440 |         5,446 |       +6 |                   7,959 |                 7,965 |               +6 |
+
+The same `+6` delta also appeared on short test strings (`ok`, `hello`,
+`Tell me a joke.`, `Привет`, and a small Markdown heading) for `gpt-5.5`,
+`gpt-5.4`, and `gpt-5.4-mini`:
+
+![OpenAI input token counter delta compared with local o200k_base](assets/openai-o200k-delta.png)
+
+This does not prove that the internal tokenizer of these models is officially
+named `o200k_base`. It only shows that, for this dataset and this API payload
+style, the API-level input-token count closely matches local `o200k_base` with a
+small constant wrapper overhead. With `instructions=text` and a minimal
+`input="ok"`, the observed overhead was `+11` tokens instead of `+6`; in both
+cases the overhead was symmetric for the English baseline and the Russian or
+mixed compared text, so the ratios changed only minimally.
+
 ## Interim Conclusion
 
 Russian tokenization premium still exists, but its size depends on the
