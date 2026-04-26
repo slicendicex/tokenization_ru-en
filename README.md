@@ -144,6 +144,72 @@ small constant wrapper overhead. With `instructions=text` and a minimal
 cases the overhead was symmetric for the English baseline and the Russian or
 mixed compared text, so the ratios changed only minimally.
 
+## Markdown Decomposition
+
+To check whether Markdown structure is diluting the RU/EN gap, the practical
+samples were decomposed into:
+
+| Variant     | Meaning                                                        |
+| :---------- | :------------------------------------------------------------- |
+| Full        | Original Markdown file with prose, headings, lists, code, paths |
+| Prose-only  | Markdown/code-like structure removed, leaving natural language  |
+
+The key result: after removing structural Markdown and code-like fragments, the
+RU/EN gap becomes larger. That supports the interpretation that practical
+developer Markdown is not just "Russian prose in a Markdown file"; it is a mixed
+object where language-neutral and English-heavy technical fragments reduce the
+overall language gap.
+
+`o200k_base` results:
+
+| Sample                  | Comparison | Full ratio | Prose-only ratio | Delta   | EN structural share | RU/mixed structural share |
+| :---------------------- | :--------- | ---------: | ---------------: | ------: | ------------------: | ------------------------: |
+| `dev_prompt`            | `ru_en`    |     1.088x |           1.149x | +0.061x |              30.26% |                    26.35% |
+| `project_rules`         | `ru_en`    |     1.140x |           1.190x | +0.050x |              23.31% |                    19.97% |
+| `system_prompt`         | `ru_en`    |     1.154x |           1.197x | +0.043x |               9.43% |                     6.08% |
+| `implementation_plan`   | `mixed_en` |     1.101x |           1.134x | +0.033x |              21.27% |                    18.90% |
+
+The structural share is computed as removed token share:
+`(full_tokens - prose_only_tokens) / full_tokens`. A separate `structure_only`
+RU/EN ratio is intentionally not used, because extracted Markdown structure is
+not a semantic translation pair.
+
+## Length And Density Controls
+
+The next control asks a different question: is FLORES higher simply because it
+is longer than the practical Markdown files?
+
+The answer appears to be no. When FLORES is split into aligned chunks whose
+English side is roughly the same size as each practical Markdown sample, the
+RU/EN token ratio remains close to the full FLORES result.
+
+`o200k_base` length/density results:
+
+| Sample                  | Comparison | Char ratio | Token ratio | Tokens/char ratio | Token ratio - char ratio |
+| :---------------------- | :--------- | ---------: | ----------: | ----------------: | -----------------------: |
+| `dev_prompt`            | `ru_en`    |     0.957x |      1.088x |            1.137x |                  +0.131x |
+| `project_rules`         | `ru_en`    |     0.981x |      1.140x |            1.162x |                  +0.159x |
+| `system_prompt`         | `ru_en`    |     0.983x |      1.154x |            1.173x |                  +0.171x |
+| `implementation_plan`   | `mixed_en` |     1.012x |      1.101x |            1.088x |                  +0.089x |
+| `flores`                | `ru_en`    |     1.117x |      1.463x |            1.309x |                  +0.346x |
+
+FLORES chunk-size control, also on `o200k_base`:
+
+| Target size like        | Chunks | Median token ratio | Mean token ratio | Median char ratio | Median tokens/char ratio |
+| :---------------------- | -----: | -----------------: | ---------------: | ----------------: | -----------------------: |
+| `dev_prompt`            |      5 |             1.474x |           1.464x |            1.109x |                   1.320x |
+| `project_rules`         |      5 |             1.459x |           1.463x |            1.114x |                   1.307x |
+| `system_prompt`         |      6 |             1.465x |           1.463x |            1.115x |                   1.308x |
+| `implementation_plan`   |      5 |             1.454x |           1.463x |            1.115x |                   1.305x |
+
+This strengthens the earlier interpretation: practical Markdown has a smaller
+RU/EN gap not because the files are shorter, but because they are a different
+genre. They contain short imperative instructions, Markdown syntax, commands,
+file paths, API terms, identifiers, and English technical labels. FLORES
+measures ordinary parallel prose; practical Markdown measures developer context
+files. Treating both as one universal "Russian costs X% more" number would be
+methodologically misleading.
+
 ## Interim Conclusion
 
 Russian tokenization premium still exists, but its size depends on the
@@ -168,6 +234,11 @@ qualification. On ordinary parallel prose, the gap can be large. On
 agent-oriented Markdown files with commands, file paths, inline code, and
 English technical labels, it becomes substantially smaller.
 
+The decomposition and length/density controls make that conclusion stronger:
+Markdown samples are not lower-gap merely because they are shorter. FLORES-sized
+controls remain high, while removing Markdown/code-like structure from practical
+samples increases the RU/EN ratio.
+
 ## Project Structure
 
 | Path                          | Purpose                                      |
@@ -182,6 +253,8 @@ English technical labels, it becomes substantially smaller.
 ```bash
 python scripts/count_openai_tiktoken.py
 python scripts/count_openai_current_model_input_tokens.py --models gpt-5.5 gpt-5.4 gpt-5.4-mini
+python scripts/count_markdown_decomposition_v2_tiktoken.py
+python scripts/length_density_controls.py
 python scripts/build_cross_model_summary.py
 ```
 
