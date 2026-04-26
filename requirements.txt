@@ -2,3 +2,5 @@ datasets
 huggingface_hub
 tiktoken
 openai
+anthropic
+google-genai
