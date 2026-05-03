@@ -20,3 +20,6 @@ LAYER*.md
 
 # Windows/WSL Zone.Identifier alternate data stream files
 *:Zone.Identifier
+
+repo-cart.md
+repo-cart.json

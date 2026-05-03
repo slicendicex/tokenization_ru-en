@@ -20,7 +20,7 @@ one metric:
 | Level                      | Meaning                                                        | Project status                         |
 | :------------------------- | :------------------------------------------------------------- | :------------------------------------- |
 | Raw tokenizer count        | Local token count from a specific tokenizer                    | Measured for OpenAI `tiktoken`         |
-| Official API token count   | Official input-token counter from a specific model/API         | Measured for OpenAI and Gemini         |
+| Official API token count   | Official input-token counter from a specific model/API         | Measured for OpenAI, Gemini, and Claude |
 | API usage / billable usage | Actual `usage` after a real request and possible billing usage | Not yet treated as the final metric    |
 
 For that reason, the current tables should not be read as final request cost.
@@ -75,13 +75,13 @@ identifiers, and English engineering terms.
 `Ratio` shows how many times longer the compared file is than the English
 baseline by token count.
 
-| Sample                  | Comparison | OpenAI `cl100k_base` | OpenAI `o200k_base` | OpenAI current API | Gemini official | Claude |
-| :---------------------- | :--------- | -------------------: | ------------------: | -----------------: | --------------: | :----- |
-| `dev_prompt`            | `ru_en`    |               1.455x |              1.088x |             1.088x |          1.065x | TODO   |
-| `project_rules`         | `ru_en`    |               1.573x |              1.140x |             1.139x |          1.112x | TODO   |
-| `system_prompt`         | `ru_en`    |               1.792x |              1.154x |             1.153x |          1.111x | TODO   |
-| `implementation_plan`   | `mixed_en` |               1.399x |              1.101x |             1.100x |          1.090x | TODO   |
-| `flores`                | `ru_en`    |               2.492x |              1.463x |             1.463x |          1.400x | TODO   |
+| Sample                  | Comparison | OpenAI `cl100k_base` | OpenAI `o200k_base` | OpenAI current API | Gemini official | Claude 4.x previous | Claude Opus 4.7 |
+| :---------------------- | :--------- | -------------------: | ------------------: | -----------------: | --------------: | ------------------: | ---------------: |
+| `dev_prompt`            | `ru_en`    |               1.455x |              1.088x |             1.088x |          1.065x |              1.359x |           1.158x |
+| `project_rules`         | `ru_en`    |               1.573x |              1.140x |             1.139x |          1.112x |              1.406x |           1.150x |
+| `system_prompt`         | `ru_en`    |               1.792x |              1.154x |             1.153x |          1.111x |              1.564x |           1.223x |
+| `implementation_plan`   | `mixed_en` |               1.399x |              1.101x |             1.100x |          1.090x |              1.256x |           1.115x |
+| `flores`                | `ru_en`    |               2.492x |              1.463x |             1.463x |          1.400x |              1.920x |           1.357x |
 
 What stands out:
 
@@ -89,7 +89,9 @@ What stands out:
 - The newer OpenAI `o200k_base` sharply reduces the gap on Markdown samples.
 - OpenAI current API input counts are almost identical to `o200k_base` ratios.
 - Gemini official `countTokens` shows a slightly smaller gap than OpenAI current API.
-- FLORES shows a larger gap than practical Markdown across all measured providers.
+- Claude is not a single profile: Haiku 4.5, Sonnet 4.6, and Opus 4.6 form a
+  higher-gap group, while Opus 4.7 is much more compact for Russian.
+- FLORES shows a larger gap than practical Markdown across most measured profiles.
 
 ## Detailed Measurements
 
@@ -99,22 +101,68 @@ What stands out:
 | `dev_prompt`            | OpenAI tiktoken     | `o200k_base`         |     1,018 |             1,108 | 1.088x | local raw tokenizer count      |
 | `dev_prompt`            | OpenAI current API  | `gpt-5.5`            |     1,024 |             1,114 | 1.088x | Responses input token count    |
 | `dev_prompt`            | Gemini official     | `gemini-2.5-flash`   |     1,140 |             1,214 | 1.065x | official countTokens           |
+| `dev_prompt`            | Claude official     | 4.x previous profile |     1,183 |             1,608 | 1.359x | official count_tokens          |
+| `dev_prompt`            | Claude official     | `claude-opus-4-7`    |     1,624 |             1,880 | 1.158x | official count_tokens          |
 | `project_rules`         | OpenAI tiktoken     | `cl100k_base`        |     1,098 |             1,727 | 1.573x | local raw tokenizer count      |
 | `project_rules`         | OpenAI tiktoken     | `o200k_base`         |     1,094 |             1,247 | 1.140x | local raw tokenizer count      |
 | `project_rules`         | OpenAI current API  | `gpt-5.5`            |     1,100 |             1,253 | 1.139x | Responses input token count    |
 | `project_rules`         | Gemini official     | `gemini-2.5-flash`   |     1,193 |             1,327 | 1.112x | official countTokens           |
+| `project_rules`         | Claude official     | 4.x previous profile |     1,246 |             1,752 | 1.406x | official count_tokens          |
+| `project_rules`         | Claude official     | `claude-opus-4-7`    |     1,797 |             2,066 | 1.150x | official count_tokens          |
 | `system_prompt`         | OpenAI tiktoken     | `cl100k_base`        |       877 |             1,572 | 1.792x | local raw tokenizer count      |
 | `system_prompt`         | OpenAI tiktoken     | `o200k_base`         |       870 |             1,004 | 1.154x | local raw tokenizer count      |
 | `system_prompt`         | OpenAI current API  | `gpt-5.5`            |       876 |             1,010 | 1.153x | Responses input token count    |
 | `system_prompt`         | Gemini official     | `gemini-2.5-flash`   |       946 |             1,051 | 1.111x | official countTokens           |
+| `system_prompt`         | Claude official     | 4.x previous profile |       990 |             1,548 | 1.564x | official count_tokens          |
+| `system_prompt`         | Claude official     | `claude-opus-4-7`    |     1,388 |             1,697 | 1.223x | official count_tokens          |
 | `implementation_plan`   | OpenAI tiktoken     | `cl100k_base`        |     1,074 |             1,503 | 1.399x | local raw tokenizer count      |
 | `implementation_plan`   | OpenAI tiktoken     | `o200k_base`         |     1,072 |             1,180 | 1.101x | local raw tokenizer count      |
 | `implementation_plan`   | OpenAI current API  | `gpt-5.5`            |     1,078 |             1,186 | 1.100x | Responses input token count    |
 | `implementation_plan`   | Gemini official     | `gemini-2.5-flash`   |     1,204 |             1,312 | 1.090x | official countTokens           |
+| `implementation_plan`   | Claude official     | 4.x previous profile |     1,271 |             1,596 | 1.256x | official count_tokens          |
+| `implementation_plan`   | Claude official     | `claude-opus-4-7`    |     1,792 |             1,998 | 1.115x | official count_tokens          |
 | `flores`                | OpenAI tiktoken     | `cl100k_base`        |     5,469 |            13,629 | 2.492x | local raw tokenizer count      |
 | `flores`                | OpenAI tiktoken     | `o200k_base`         |     5,440 |             7,959 | 1.463x | local raw tokenizer count      |
 | `flores`                | OpenAI current API  | `gpt-5.5`            |     5,446 |             7,965 | 1.463x | Responses input token count    |
 | `flores`                | Gemini official     | `gemini-2.5-flash`   |     5,777 |             8,086 | 1.400x | official countTokens           |
+| `flores`                | Claude official     | 4.x previous profile |     6,132 |            11,772 | 1.920x | official count_tokens          |
+| `flores`                | Claude official     | `claude-opus-4-7`    |     8,791 |            11,931 | 1.357x | official count_tokens          |
+
+## Claude Official Token Count
+
+Claude was measured with the official `count_tokens` API. No local tokenizer was
+used, and the internal tokenizer implementation is not inferred here.
+
+Two payload styles were checked:
+
+| Payload style | Meaning                                                        |
+| :------------ | :------------------------------------------------------------- |
+| `message`     | Text is sent as an ordinary user message                       |
+| `system`      | Text is sent as system-like context plus a minimal user message |
+
+The `message` and `system` payloads produced nearly identical RU/EN ratios, so
+the main comparison table uses the `message` payload and treats `system` as a
+robustness check.
+
+| Sample                  | Comparison | Claude 4.x previous profile | Claude Opus 4.7 |
+| :---------------------- | :--------- | --------------------------: | ---------------: |
+| `dev_prompt`            | `ru_en`    |                      1.359x |           1.158x |
+| `project_rules`         | `ru_en`    |                      1.406x |           1.150x |
+| `system_prompt`         | `ru_en`    |                      1.564x |           1.223x |
+| `implementation_plan`   | `mixed_en` |                      1.256x |           1.115x |
+| `flores`                | `ru_en`    |                      1.920x |           1.357x |
+
+The `Claude 4.x previous profile` group includes:
+
+- `claude-haiku-4-5-20251001`;
+- `claude-sonnet-4-6`;
+- `claude-opus-4-6`.
+
+On these samples, those models returned identical or nearly identical official
+token counts. `claude-opus-4-7` showed a different profile: much more compact
+for Russian on every sample. This means the correct summary is not "Claude
+tokenization behaves like X"; it is that observable Claude token count profiles
+differ by specific model version.
 
 ## Comparison With Local `o200k_base`
 
@@ -221,6 +269,8 @@ On the neutral FLORES baseline, the gap remains visible:
 | :------------------- | ----------: |
 | OpenAI current API   |      1.463x |
 | Gemini official      |      1.400x |
+| Claude 4.x previous  |      1.920x |
+| Claude Opus 4.7      |      1.357x |
 
 On practical Markdown instructions, the gap is much smaller:
 
@@ -228,11 +278,21 @@ On practical Markdown instructions, the gap is much smaller:
 | :------------------- | ------------------------------: |
 | OpenAI current API   |                  1.088x-1.153x |
 | Gemini official      |                  1.065x-1.112x |
+| Claude 4.x previous  |                  1.256x-1.564x |
+| Claude Opus 4.7      |                  1.115x-1.223x |
 
 In other words, the claim "Russian is more expensive than English" needs
 qualification. On ordinary parallel prose, the gap can be large. On
 agent-oriented Markdown files with commands, file paths, inline code, and
 English technical labels, it becomes substantially smaller.
+
+After adding Claude, the provider story also becomes more nuanced. Claude Haiku
+4.5, Sonnet 4.6, and Opus 4.6 show a higher RU/EN official token count profile
+than current OpenAI and Gemini on these samples. Claude Opus 4.7 is much closer
+to the OpenAI/Gemini group on practical Markdown and is lower than both OpenAI
+current API and Gemini official count on the FLORES ratio. The right comparison
+therefore has to name the provider, model version, counting method, and text
+type.
 
 The decomposition and length/density controls make that conclusion stronger:
 Markdown samples are not lower-gap merely because they are shorter. FLORES-sized
@@ -253,6 +313,7 @@ samples increases the RU/EN ratio.
 ```bash
 python scripts/count_openai_tiktoken.py
 python scripts/count_openai_current_model_input_tokens.py --models gpt-5.5 gpt-5.4 gpt-5.4-mini
+python scripts/count_claude_official_tokens.py --models claude-haiku-4-5-20251001 claude-sonnet-4-6 claude-opus-4-6 claude-opus-4-7
 python scripts/count_markdown_decomposition_v2_tiktoken.py
 python scripts/length_density_controls.py
 python scripts/build_cross_model_summary.py
@@ -265,7 +326,6 @@ API keys and local `.env` files should not be committed to Git.
 
 This work is still in progress. Next steps:
 
-- compare Claude official token count;
 - check actual API usage on real requests;
-- calculate pricing scenarios separately, including input/output tokens,
-  caching, and the billing rules of specific models.
+- calculate pricing scenarios separately, including input, cached input, output,
+  possible reasoning/thinking tokens, and the billing rules of specific models.
